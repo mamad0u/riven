@@ -274,7 +274,7 @@ export function joinPromptContent(body: string, registry: VariableRegistry): str
 export function migrateLegacyVariables(content: string): string {
   const { body: rawBody, registry: existing } = splitPromptContent(content)
   const registry: VariableRegistry = { ...existing }
-  let body = rawBody
+  const body = rawBody
   let i = 0
   let out = ''
 

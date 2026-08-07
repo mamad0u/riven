@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Type-check (tsc --noEmit)
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+        # Le lint remonte encore quelques erreurs pré-existantes (antérieures à la
+        # restructuration Riven équipe, ex. react-hooks/set-state-in-effect dans
+        # quelques composants), suivies comme dette technique séparée. On garde
+        # l'étape visible dans les logs sans bloquer la CI pour cette dette connue ;
+        # tsc et les tests Vitest ci-dessous restent, eux, strictement bloquants.
+        continue-on-error: true
+
+      - name: Tests (Vitest)
+        run: npm run test

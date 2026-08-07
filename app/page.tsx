@@ -63,7 +63,9 @@ export default function Home() {
   const tagsViewRef = useRef<TagsViewHandle>(null)
   const pendingFocusTagSearch = useRef(false)
   const splitPairRef = useRef(splitPair)
-  splitPairRef.current = splitPair
+  useEffect(() => {
+    splitPairRef.current = splitPair
+  }, [splitPair])
 
   const {
     viewMode,
