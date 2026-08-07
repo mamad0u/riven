@@ -1,4 +1,4 @@
-import { FileItem } from '../../electron.d'
+import { FileItem } from '@/electron.d'
 
 export interface PromptItem {
   file: FileItem

@@ -1,4 +1,4 @@
-import type { FileItem } from '../../electron.d'
+import type { FileItem } from '@/electron.d'
 
 export const RIVEN_FILE_DRAG_MIME = 'application/x-riven-file'
 
