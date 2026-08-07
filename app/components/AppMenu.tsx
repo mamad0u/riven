@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Search, ChevronRight } from 'lucide-react'
-import type { FileItem } from '../../electron.d'
+import type { FileItem } from '@/electron.d'
 import {
   ShortcutId,
   getShortcutsList,

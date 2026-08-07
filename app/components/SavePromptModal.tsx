@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { FileItem } from '../../electron.d'
+import { FileItem } from '@/electron.d'
 import { ensureMdExtension } from '../lib/moduleInsert'
 import Button from './ui/Button'
 import Input from './ui/Input'

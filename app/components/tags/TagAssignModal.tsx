@@ -1,8 +1,8 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { listTags, TagId } from '../../lib/tagStore'
-import { getTagIdsForPath, setTagIdsForPath } from '../../lib/promptMetadata'
+import { listTags, TagId } from '@/app/lib/tagStore'
+import { getTagIdsForPath, setTagIdsForPath } from '@/app/lib/promptMetadata'
 import Button from '../ui/Button'
 import Input from '../ui/Input'
 

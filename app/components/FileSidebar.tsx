@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, ChevronRight } from 'lucide-react'
-import { FileItem } from '../../electron.d'
+import { FileItem } from '@/electron.d'
 import { NavFilter, computeNavCounts } from '../lib/navFilters'
 import {
   getFavoritesCount,

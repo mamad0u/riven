@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { TrashItem } from '../../electron.d'
+import { TrashItem } from '@/electron.d'
 import ContextMenu, { ContextMenuItem } from './ContextMenu'
 import PurgeConfirmModal from './PurgeConfirmModal'
 import Button from './ui/Button'

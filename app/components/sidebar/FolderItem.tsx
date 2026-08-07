@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { Folder, ChevronRight } from 'lucide-react'
-import { FileItem } from '../../../electron.d'
+import { FileItem } from '@/electron.d'
 import FileTreeFileRow from '../FileTreeFileRow'
 import InlineRename from '../InlineRename'
-import { resolveFolderColor } from '../../lib/folderColors'
+import { resolveFolderColor } from '@/app/lib/folderColors'
 
 interface FolderItemProps {
   folder: FileItem

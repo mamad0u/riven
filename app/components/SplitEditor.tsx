@@ -1,7 +1,7 @@
 'use client'
 
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react'
-import type { FileItem } from '../../electron.d'
+import type { FileItem } from '@/electron.d'
 import EditorPane, { type EditorPaneHandle } from './EditorPane'
 import { isRivenFileDrag, parseFileDragData } from '../lib/fileDrag'
 

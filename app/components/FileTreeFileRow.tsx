@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FileItem } from '../../electron.d'
+import { FileItem } from '@/electron.d'
 import InlineRename from './InlineRename'
 import { setFileDragData } from '../lib/fileDrag'
 

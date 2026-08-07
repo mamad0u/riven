@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import Badge from '../ui/Badge'
-import type { VariableDefinition, VariableRegistry } from '../../lib/variableRegistry'
+import type { VariableDefinition, VariableRegistry } from '@/app/lib/variableRegistry'
 import {
   interpolateVariableRefs,
   normalizeVariableDefinition,
-} from '../../lib/variableRegistry'
+} from '@/app/lib/variableRegistry'
 
 interface ModuleVariableProps {
   config?: Partial<VariableDefinition> | null

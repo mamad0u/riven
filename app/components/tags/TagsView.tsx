@@ -1,8 +1,8 @@
 'use client'
 
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react'
-import { useTagStore } from '../../hooks/useTagStore'
-import { GroupId, TagId } from '../../lib/tagStore'
+import { useTagStore } from '@/app/hooks/useTagStore'
+import { GroupId, TagId } from '@/app/lib/tagStore'
 import TagGroupPanel from './TagGroupPanel'
 import TagListPanel from './TagListPanel'
 

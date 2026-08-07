@@ -1,7 +1,7 @@
 'use client'
 
 import { Plus, BookmarkPlus } from 'lucide-react'
-import { TagGroup, GroupId } from '../../lib/tagStore'
+import { TagGroup, GroupId } from '@/app/lib/tagStore'
 import TagSearchInput from './TagSearchInput'
 import InlineRename from '../InlineRename'
 import ContextMenu, { ContextMenuItem } from '../ContextMenu'

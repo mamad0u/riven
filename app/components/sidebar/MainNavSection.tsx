@@ -1,7 +1,7 @@
 'use client'
 
 import { LayoutGrid, Clock, Star, Tag, Trash2, LucideIcon } from 'lucide-react'
-import { NavFilter, NAV_FILTERS, NavCounts } from '../../lib/navFilters'
+import { NavFilter, NAV_FILTERS, NavCounts } from '@/app/lib/navFilters'
 
 const ICONS: Record<NavFilter, LucideIcon> = {
   all: LayoutGrid,

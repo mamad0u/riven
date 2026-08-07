@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Plus, BookmarkPlus, Trash2, FolderInput, Check } from 'lucide-react'
-import { TagRecord, TagGroup, TagId, GroupId } from '../../lib/tagStore'
+import { TagRecord, TagGroup, TagId, GroupId } from '@/app/lib/tagStore'
 import InlineRename from '../InlineRename'
 import ContextMenu, { ContextMenuItem } from '../ContextMenu'
 import Button from '../ui/Button'
