@@ -52,7 +52,9 @@ const applyStoredBasePath = () => {
   }
 }
 
-let registeredGlobalShortcuts = {
+// const : cet objet est partagé par référence avec ipc/app.js (shortcuts-set-globals),
+// il ne doit jamais être réassigné, seulement muté en place (voir plus bas).
+const registeredGlobalShortcuts = {
   toggleSidebar: 'CommandOrControl+Shift+S',
   capturePrompt: 'Alt+Shift+C',
 }
@@ -1186,10 +1188,10 @@ app.whenReady().then(async () => {
   applyStoredBasePath()
   const bootConfig = loadAppConfig()
   if (bootConfig.globalShortcuts) {
-    registeredGlobalShortcuts = {
-      ...registeredGlobalShortcuts,
-      ...bootConfig.globalShortcuts,
-    }
+    // Mutation en place (pas de réassignation) : ipc/app.js a reçu une référence
+    // vers cet objet à l'enregistrement des handlers, avant ce point. Réassigner
+    // la variable créerait un nouvel objet et désynchroniserait les deux copies.
+    Object.assign(registeredGlobalShortcuts, bootConfig.globalShortcuts)
   }
 
   // Initialiser le dossier de base
