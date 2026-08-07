@@ -1,8 +1,9 @@
 @import "tailwindcss";
+@import "./styles/riven-tokens.css";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: var(--riven-bg-main);
+  --foreground: var(--riven-text-primary);
 }
 
 @theme inline {
@@ -10,17 +11,264 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-riven-main: var(--riven-bg-main);
+  --color-riven-sidebar: var(--riven-bg-sidebar);
+  --color-riven-card: var(--riven-bg-card);
+  --color-riven-input: var(--riven-bg-input);
+  --color-riven-selected: var(--riven-bg-selected);
+  --color-riven-border: var(--riven-border);
+  --color-riven-text-primary: var(--riven-text-primary);
+  --color-riven-text-secondary: var(--riven-text-secondary);
+  --color-riven-accent: var(--riven-accent);
+  --color-riven-accent-muted: var(--riven-accent-muted);
+  --color-riven-folder-orange: var(--riven-folder-orange);
+  --color-riven-folder-pink: var(--riven-folder-pink);
+  --color-riven-folder-teal: var(--riven-folder-teal);
+  --color-riven-tag-green: var(--riven-tag-green);
+  --color-riven-tag-green-bg: var(--riven-tag-green-bg);
+  --color-riven-tag-purple: var(--riven-tag-purple);
+  --color-riven-tag-purple-bg: var(--riven-tag-purple-bg);
+  --color-riven-tag-blue: var(--riven-tag-blue);
+  --color-riven-tag-blue-bg: var(--riven-tag-blue-bg);
+
+  --radius-riven: var(--riven-radius);
+  --radius-riven-lg: var(--riven-radius-lg);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--riven-bg-main);
+  color: var(--riven-text-primary);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.app-drag {
+  -webkit-app-region: drag;
+}
+
+.app-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes capture-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes capture-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.animate-capture-backdrop {
+  animation: capture-backdrop-in 0.22s ease-out both;
+}
+
+.animate-capture-panel {
+  animation: capture-panel-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes quick-search-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-quick-search {
+  animation: quick-search-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Ouverture / fermeture fluide des arbres sidebar */
+.sidebar-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  width: 100%;
+  overflow: clip;
+  transition: grid-template-rows 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sidebar-collapse[data-open='true'] {
+  grid-template-rows: 1fr;
+}
+
+.sidebar-collapse > .sidebar-collapse-inner {
+  overflow: clip;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.sidebar-chevron {
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sidebar-chevron[data-open='true'] {
+  transform: rotate(90deg);
+}
+
+/* Lignes sidebar (nav / dossiers / fichiers) — hover & focus identiques */
+.sidebar-row {
+  display: flex;
+  box-sizing: border-box;
+  width: calc(100% - 1rem);
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+  align-items: center;
+  border-radius: var(--riven-radius);
+  border: 1px solid transparent;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--riven-text-secondary);
+  background: transparent;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sidebar-row:hover,
+.sidebar-row:focus-visible,
+.sidebar-row[data-hover='true'] {
+  background: var(--riven-bg-card);
+  color: var(--riven-text-primary);
+  outline: none;
+}
+
+.sidebar-row[data-selected='true'],
+.sidebar-row[data-selected='true']:hover,
+.sidebar-row[data-selected='true']:focus-visible,
+.sidebar-row[data-selected='true'][data-hover='true'] {
+  background: var(--riven-bg-selected);
+  border-color: var(--riven-border);
+  color: var(--riven-text-primary);
+}
+
+.sidebar-row-icon {
+  width: 2rem;
+  height: 2rem;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--riven-radius);
+  border: 1px solid transparent;
+  color: var(--riven-text-secondary);
+  background: transparent;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  cursor: pointer;
+}
+
+.sidebar-row-icon:hover,
+.sidebar-row-icon:focus-visible {
+  background: var(--riven-bg-card);
+  color: var(--riven-text-primary);
+  outline: none;
+}
+
+.sidebar-row-icon[data-selected='true'],
+.sidebar-row-icon[data-selected='true']:hover,
+.sidebar-row-icon[data-selected='true']:focus-visible {
+  background: var(--riven-bg-selected);
+  border-color: var(--riven-border);
+  color: var(--riven-text-primary);
+}
+
+.riven-glass {
+  background: var(--riven-glass);
+  border: 1px solid var(--riven-glass-border);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.module-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  max-width: 100%;
+  margin: 0 0.125rem;
+  padding: 0.125rem 0.5rem;
+  vertical-align: middle;
+  border-radius: var(--riven-radius);
+  border: 1px solid var(--riven-border);
+  background: var(--riven-bg-card);
+  color: var(--riven-text-primary);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-size: 0.75rem;
+  line-height: 1.25rem;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.module-chip-icon {
+  flex-shrink: 0;
+  opacity: 0.75;
+  font-size: 0.7rem;
+}
+
+.module-chip-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Scrollbars — thumb pill flottant, track invisible */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--riven-scrollbar-thumb) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: calc(var(--riven-scrollbar-size) + var(--riven-scrollbar-gap) * 2);
+  height: calc(var(--riven-scrollbar-size) + var(--riven-scrollbar-gap) * 2);
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--riven-scrollbar-thumb);
+  border-radius: 9999px;
+  border: var(--riven-scrollbar-gap) solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--riven-scrollbar-thumb-hover);
+  border: var(--riven-scrollbar-gap) solid transparent;
+  background-clip: padding-box;
 }

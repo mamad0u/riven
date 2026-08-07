@@ -1,0 +1,56 @@
+:root,
+html.dark {
+  --riven-bg-main: #0D0D0E;
+  --riven-bg-sidebar: #161618;
+  --riven-bg-card: #1A1D21;
+  --riven-bg-input: #121417;
+  --riven-bg-selected: #252528;
+  --riven-border: #2A2D32;
+  --riven-text-primary: #EDEDED;
+  --riven-text-secondary: #8B8D94;
+  --riven-accent: #2DD4BF;
+  --riven-accent-muted: #1E3A3A;
+  --riven-folder-orange: #F97316;
+  --riven-folder-pink: #EC4899;
+  --riven-folder-teal: #14B8A6;
+  --riven-tag-green: #22C55E;
+  --riven-tag-green-bg: #14532D;
+  --riven-tag-purple: #A78BFA;
+  --riven-tag-purple-bg: #3B0764;
+  --riven-tag-blue: #60A5FA;
+  --riven-tag-blue-bg: #1E3A5F;
+  --riven-radius: 8px;
+  --riven-radius-lg: 12px;
+  --riven-glass: rgba(26, 29, 33, 0.72);
+  --riven-glass-border: rgba(255, 255, 255, 0.1);
+  --riven-scrollbar-thumb: #4B4E54;
+  --riven-scrollbar-thumb-hover: #5C6068;
+  --riven-scrollbar-size: 5px;
+  --riven-scrollbar-gap: 4px;
+}
+
+html.light {
+  --riven-bg-main: #F4F5F7;
+  --riven-bg-sidebar: #FFFFFF;
+  --riven-bg-card: #FFFFFF;
+  --riven-bg-input: #EEF0F3;
+  --riven-bg-selected: #E5E7EB;
+  --riven-border: #D1D5DB;
+  --riven-text-primary: #111827;
+  --riven-text-secondary: #6B7280;
+  --riven-accent: #0D9488;
+  --riven-accent-muted: #CCFBF1;
+  --riven-folder-orange: #EA580C;
+  --riven-folder-pink: #DB2777;
+  --riven-folder-teal: #0D9488;
+  --riven-tag-green: #16A34A;
+  --riven-tag-green-bg: #DCFCE7;
+  --riven-tag-purple: #7C3AED;
+  --riven-tag-purple-bg: #EDE9FE;
+  --riven-tag-blue: #2563EB;
+  --riven-tag-blue-bg: #DBEAFE;
+  --riven-glass: rgba(255, 255, 255, 0.82);
+  --riven-glass-border: rgba(0, 0, 0, 0.08);
+  --riven-scrollbar-thumb: #9CA3AF;
+  --riven-scrollbar-thumb-hover: #6B7280;
+}
