@@ -1,21 +1,20 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { FileItem, TrashItem } from '../electron.d'
 import { NavFilter } from './lib/navFilters'
-import { getTagsForPath, getTagIdsForPath, isFavorite, renameMetadataPath } from './lib/promptMetadata'
-import { ensureMigrated, getTag } from './lib/tagStore'
-import {
-  loadShortcutMap,
-  eventMatchesAccelerator,
-} from './lib/shortcutStore'
+import { renameMetadataPath } from './lib/promptMetadata'
+import { ensureMigrated } from './lib/tagStore'
+import { loadShortcutMap } from './lib/shortcutStore'
 import { applyTheme, loadTheme } from './lib/themeStore'
-import { fileToPromptItem, sortByRecent, PromptItem } from './lib/promptItems'
+import { PromptItem } from './lib/promptItems'
 import { insertModuleToken, splitPromptContent } from './lib/moduleInsert'
 import { useEditorTabs } from './hooks/useEditorTabs'
+import { useDashboardFilters } from './hooks/useDashboardFilters'
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import FileSidebar from './components/FileSidebar'
 import TrashListView from './components/TrashListView'
-import MainHeader, { BrowseBy, type DateFilterPreset } from './components/MainHeader'
+import MainHeader from './components/MainHeader'
 import PromptListView from './components/PromptListView'
 import PromptGridView from './components/PromptGridView'
 import TagsView, { type TagsViewHandle } from './components/tags/TagsView'
@@ -28,9 +27,7 @@ import ConfirmModal from './components/ConfirmModal'
 import {
   DEFAULT_LAYOUT_DISPLAY,
   type LayoutDisplayPrefs,
-  type LayoutSortBy,
 } from './components/LayoutSettingsPopover'
-import type { TagFilterSelection } from './components/HeaderFilterSystem'
 import { ModuleType } from './components/ModuleMenu'
 
 export default function Home() {
@@ -50,12 +47,7 @@ export default function Home() {
   const [currentDirectory, setCurrentDirectory] = useState<FileItem | null>(null)
   const [navFilter, setNavFilter] = useState<NavFilter>('all')
   const [sidebarFocus, setSidebarFocus] = useState<'nav' | 'directory' | 'file'>('nav')
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
-  const [browseBy, setBrowseBy] = useState<BrowseBy>('file')
-  const [sortBy, setSortBy] = useState<LayoutSortBy>('date')
-  const [sortAsc, setSortAsc] = useState(false)
   const [displayPrefs, setDisplayPrefs] = useState<LayoutDisplayPrefs>(DEFAULT_LAYOUT_DISPLAY)
-  const [searchQuery, setSearchQuery] = useState('')
   const [splitPair, setSplitPair] = useState<{ leftTabId: string; rightTabId: string } | null>(null)
   const [focusedPane, setFocusedPane] = useState<SplitPaneId>('left')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -67,29 +59,33 @@ export default function Home() {
   const [favoritesVersion, setFavoritesVersion] = useState(0)
   const [tagsVersion, setTagsVersion] = useState(0)
   const [sidebarTreeVersion, setSidebarTreeVersion] = useState(0)
-  const [activeTagFilters, setActiveTagFilters] = useState<TagFilterSelection[]>([])
-  const [folderFilter, setFolderFilter] = useState<string | null>(null)
-  const [dateFilter, setDateFilter] = useState<DateFilterPreset>('all')
   const editorRef = useRef<SplitEditorHandle>(null)
   const tagsViewRef = useRef<TagsViewHandle>(null)
   const pendingFocusTagSearch = useRef(false)
   const splitPairRef = useRef(splitPair)
   splitPairRef.current = splitPair
 
-  const filePaths = useMemo(() => allFiles.map((f) => f.path), [allFiles])
-
-  const folderOptions = useMemo(() => {
-    const map = new Map<string, { name: string; path: string }>()
-    for (const f of allFiles) {
-      const norm = f.path.replace(/\\/g, '/')
-      const parts = norm.split('/').filter(Boolean)
-      if (parts.length < 2) continue
-      const folderPath = parts.slice(0, -1).join('/')
-      const folderName = parts[parts.length - 2]
-      if (!map.has(folderPath)) map.set(folderPath, { name: folderName, path: folderPath })
-    }
-    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name, 'fr'))
-  }, [allFiles])
+  const {
+    viewMode,
+    setViewMode,
+    browseBy,
+    setBrowseBy,
+    sortBy,
+    setSortBy,
+    sortAsc,
+    setSortAsc,
+    searchQuery,
+    setSearchQuery,
+    setActiveTagFilters,
+    folderFilter,
+    setFolderFilter,
+    dateFilter,
+    setDateFilter,
+    filePaths,
+    folderOptions,
+    promptItems,
+    syncedTagFilters,
+  } = useDashboardFilters({ allFiles, navFilter })
 
   const loadAllFiles = useCallback(async () => {
     if (!window.electronAPI?.fileManager) return
@@ -139,65 +135,18 @@ export default function Home() {
   }, [openFile])
 
   // Fallback in-app capture + raccourcis renderer (tags / dashboard)
-  useEffect(() => {
-    const run = (e: KeyboardEvent) => {
-      const map = loadShortcutMap()
-      const target = e.target as HTMLElement | null
-      const isEditable =
-        target &&
-        (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.isContentEditable)
-      const isTagSearch = target?.getAttribute?.('data-tag-search') === 'true'
-
-      if (eventMatchesAccelerator(e, map.capturePrompt)) {
-        if (e.ctrlKey || e.metaKey) return
-        e.preventDefault()
-        e.stopPropagation()
-        const sel = window.getSelection()?.toString() ?? ''
-        window.electronAPI?.openCaptureOverlay?.(sel)
-        return
-      }
-
-      if (eventMatchesAccelerator(e, map.dashboard)) {
-        if (isEditable && !isTagSearch) return
-        e.preventDefault()
-        setNavFilter('all')
-        setCurrentDirectory(null)
-        setSidebarFocus('nav')
-        setViewingDashboard(true)
-        setBrowseBy('file')
-        setActiveTagFilters([])
-        setFolderFilter(null)
-        return
-      }
-
-      if (eventMatchesAccelerator(e, map.tagSearch)) {
-        if (isEditable && !isTagSearch) return
-        e.preventDefault()
-        setNavFilter('tags')
-        setCurrentDirectory(null)
-        setSidebarFocus('nav')
-        setViewingDashboard(true)
-        setBrowseBy('tags')
-        if (navFilter === 'tags') {
-          tagsViewRef.current?.focusSearch()
-        } else {
-          pendingFocusTagSearch.current = true
-        }
-      }
-    }
-
-    window.addEventListener('keydown', run, true)
-    const onShortcutsChanged = () => {
-      /* map relu à chaque keydown via loadShortcutMap */
-    }
-    window.addEventListener('riven-shortcuts-changed', onShortcutsChanged)
-    return () => {
-      window.removeEventListener('keydown', run, true)
-      window.removeEventListener('riven-shortcuts-changed', onShortcutsChanged)
-    }
-  }, [navFilter])
+  useKeyboardShortcuts({
+    navFilter,
+    setNavFilter,
+    setCurrentDirectory,
+    setSidebarFocus,
+    setViewingDashboard,
+    setBrowseBy,
+    setActiveTagFilters,
+    setFolderFilter,
+    tagsViewRef,
+    pendingFocusTagSearch,
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -231,67 +180,6 @@ export default function Home() {
     }
   }, [showTagsView])
 
-  const filteredFiles = (() => {
-    let files = allFiles
-    if (navFilter === 'favorites') {
-      files = files.filter((f) => isFavorite(f.path))
-    }
-    if (folderFilter) {
-      const prefix = folderFilter.replace(/\\/g, '/').replace(/\/$/, '')
-      files = files.filter((f) => {
-        const norm = f.path.replace(/\\/g, '/')
-        const parent = norm.split('/').slice(0, -1).join('/')
-        return parent === prefix || parent.startsWith(prefix + '/')
-      })
-    }
-    if (activeTagFilters.length > 0) {
-      const includes = activeTagFilters.filter((t) => t.mode !== 'exclude')
-      const excludes = activeTagFilters.filter((t) => t.mode === 'exclude')
-      files = files.filter((f) => {
-        const tagIds = getTagIdsForPath(f.path)
-        if (includes.length > 0 && !includes.some((t) => tagIds.includes(t.id))) {
-          return false
-        }
-        if (excludes.some((t) => tagIds.includes(t.id))) return false
-        return true
-      })
-    }
-    if (dateFilter !== 'all') {
-      const now = new Date()
-      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      const weekAgo = new Date(startOfToday)
-      weekAgo.setDate(weekAgo.getDate() - 7)
-      const monthAgo = new Date(startOfToday)
-      monthAgo.setMonth(monthAgo.getMonth() - 1)
-      files = files.filter((f) => {
-        const m = new Date(f.modified).getTime()
-        if (dateFilter === 'today') return m >= startOfToday.getTime()
-        if (dateFilter === 'week') return m >= weekAgo.getTime()
-        if (dateFilter === 'month') return m >= monthAgo.getTime()
-        if (dateFilter === 'older') return m < monthAgo.getTime()
-        return true
-      })
-    }
-    return files
-  })()
-
-  let promptItems: PromptItem[] = filteredFiles.map((f, i) =>
-    fileToPromptItem(f, i, getTagsForPath)
-  )
-  const effectiveSort: LayoutSortBy =
-    browseBy === 'date' || navFilter === 'recent' ? 'date' : sortBy
-  if (effectiveSort === 'date') {
-    promptItems = sortByRecent(promptItems)
-    if (sortAsc) promptItems = [...promptItems].reverse()
-  } else {
-    promptItems = [...promptItems].sort((a, b) =>
-      a.title.localeCompare(b.title, 'fr', { sensitivity: 'base' })
-    )
-    if (!sortAsc) promptItems = promptItems.reverse()
-  }
-  promptItems = promptItems.filter(
-    (p) => !searchQuery.trim() || p.title.toLowerCase().includes(searchQuery.toLowerCase())
-  )
   void favoritesVersion
   void tagsVersion
 
@@ -331,7 +219,7 @@ export default function Home() {
       if (filter === 'recent') setBrowseBy('date')
       else setBrowseBy((prev) => (prev === 'tags' ? 'file' : prev))
     }
-  }, [])
+  }, [setBrowseBy])
 
   const handleFilterByTag = useCallback((tagId: string, tagName: string) => {
     setActiveTagFilters([{ id: tagId, name: tagName, mode: 'include' }])
@@ -339,7 +227,7 @@ export default function Home() {
     setBrowseBy('file')
     setSidebarFocus('nav')
     setViewingDashboard(true)
-  }, [])
+  }, [setActiveTagFilters, setBrowseBy])
 
   const handleDisplayPrefsChange = useCallback((prefs: LayoutDisplayPrefs) => {
     setDisplayPrefs(prefs)
@@ -607,11 +495,6 @@ export default function Home() {
       setFocusedPane('left')
     }
   }, [tabs, splitPair, clearSplitKeeping])
-
-  const syncedTagFilters = activeTagFilters.map((tag) => {
-    const t = getTag(tag.id)
-    return t ? { id: t.id, name: t.name, mode: tag.mode } : tag
-  })
 
   const headerSharedProps = {
     searchQuery,
