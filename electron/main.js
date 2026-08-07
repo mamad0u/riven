@@ -10,6 +10,9 @@ const fileManager = require('./fileManager')
 const {
   captureSelectedTextWithTimeout,
 } = require('./captureSelection')
+const { registerFileIpc } = require('./ipc/files')
+const { registerDialogIpc } = require('./ipc/dialogs')
+const { registerAppIpc } = require('./ipc/app')
 
 let mainWindow = null
 let sidebarWindow = null
@@ -817,213 +820,35 @@ ipcMain.handle('window-toggle-always-on-top', (event) => {
   return next
 })
 
-// Handlers pour la gestion de fichiers
+// Handlers pour la gestion de fichiers, dialogs et app (extraits dans electron/ipc/*.js)
 // S'assurer que les handlers sont enregistrés avant app.whenReady()
-console.log('Enregistrement des handlers IPC pour la gestion de fichiers...')
-
-ipcMain.handle('file-list', async (event, path) => {
-  try {
-    console.log('Handler file-list appelé avec path:', path)
-    return await fileManager.listDirectory(path)
-  } catch (error) {
-    console.error('Erreur dans file-list:', error)
-    return { error: error.message }
-  }
+registerFileIpc({
+  ipcMain,
+  fileManager,
+  path,
+  fs,
+  dialog,
+  BrowserWindow,
+  getMainWindow: () => mainWindow,
+  loadAppConfig,
+  saveAppConfig,
 })
 
-ipcMain.handle('file-list-all', async () => {
-  try {
-    return await fileManager.listAllFiles()
-  } catch (error) {
-    return { error: error.message }
-  }
+registerDialogIpc({
+  ipcMain,
+  dialog,
+  BrowserWindow,
+  getMainWindow: () => mainWindow,
 })
 
-ipcMain.handle('file-create-dir', async (event, path, name) => {
-  try {
-    return await fileManager.createDirectory(path, name)
-  } catch (error) {
-    return { error: error.message }
-  }
-})
-
-ipcMain.handle('file-create-file', async (event, path, name, content) => {
-  try {
-    return await fileManager.createFile(path, name, content)
-  } catch (error) {
-    return { error: error.message }
-  }
-})
-
-ipcMain.handle('file-read', async (event, path) => {
-  try {
-    return await fileManager.readFile(path)
-  } catch (error) {
-    return { error: error.message }
-  }
-})
-
-ipcMain.handle('file-write', async (event, path, content) => {
-  try {
-    return await fileManager.writeFile(path, content)
-  } catch (error) {
-    return { error: error.message }
-  }
-})
-
-ipcMain.handle('file-delete', async (event, path) => {
-  try {
-    return await fileManager.deleteItem(path)
-  } catch (error) {
-    return { error: error.message }
-  }
-})
-
-ipcMain.handle('file-rename', async (event, path, newName) => {
-  try {
-    return await fileManager.renameItem(path, newName)
-  } catch (error) {
-    return { error: error.message }
-  }
-})
-
-ipcMain.handle('file-move-to-trash', async (event, path) => {
-  try {
-    return await fileManager.moveToTrash(path)
-  } catch (error) {
-    return { error: error.message }
-  }
-})
-
-ipcMain.handle('file-list-trash', async () => {
-  try {
-    return await fileManager.listTrash()
-  } catch (error) {
-    return { error: error.message }
-  }
-})
-
-ipcMain.handle('file-restore-trash', async (event, id) => {
-  try {
-    return await fileManager.restoreFromTrash(id)
-  } catch (error) {
-    return { error: error.message }
-  }
-})
-
-ipcMain.handle('file-purge-trash', async (event, id) => {
-  try {
-    return await fileManager.purgeTrashItem(id)
-  } catch (error) {
-    return { error: error.message }
-  }
-})
-
-ipcMain.handle('file-get-base-path', async () => {
-  return fileManager.getBasePath()
-})
-
-ipcMain.handle('file-search', async (event, query) => {
-  try {
-    return await fileManager.searchFiles(query)
-  } catch (error) {
-    return { error: error.message, items: [] }
-  }
-})
-ipcMain.handle('dialog-open-file', async () => {
-  const win = BrowserWindow.getFocusedWindow()
-  const result = await dialog.showOpenDialog(win, {
-    properties: ['openFile'],
-  })
-  if (result.canceled || result.filePaths.length === 0) {
-    return { error: 'cancelled' }
-  }
-  return { path: result.filePaths[0] }
-})
-
-ipcMain.handle('dialog-open-directory', async () => {
-  const win = BrowserWindow.getFocusedWindow() || mainWindow
-  const result = await dialog.showOpenDialog(win, {
-    properties: ['openDirectory'],
-  })
-  if (result.canceled || result.filePaths.length === 0) {
-    return { error: 'cancelled' }
-  }
-  return { path: result.filePaths[0] }
-})
-
-ipcMain.handle('file-set-base-path', async (_event, nextPath) => {
-  try {
-    const resolved = fileManager.setBasePath(nextPath)
-    const config = loadAppConfig()
-    config.basePath = resolved
-    saveAppConfig(config)
-    await fileManager.initializeBaseDirectory()
-    return { success: true, path: resolved }
-  } catch (error) {
-    return { error: error.message }
-  }
-})
-
-ipcMain.handle('file-import', async () => {
-  try {
-    const win = BrowserWindow.getFocusedWindow() || mainWindow
-    const result = await dialog.showOpenDialog(win, {
-      properties: ['openFile'],
-      filters: [
-        { name: 'Textes / Markdown', extensions: ['md', 'txt', 'markdown'] },
-        { name: 'Tous les fichiers', extensions: ['*'] },
-      ],
-    })
-    if (result.canceled || result.filePaths.length === 0) {
-      return { error: 'cancelled' }
-    }
-    return await fileManager.importExternalFile(result.filePaths[0])
-  } catch (error) {
-    return { error: error.message }
-  }
-})
-
-ipcMain.handle('file-export', async (_event, sourcePath) => {
-  try {
-    if (!sourcePath) return { error: 'Sélectionnez un fichier' }
-    const read = await fileManager.readFile(sourcePath)
-    if (read.error) return { error: read.error }
-    const win = BrowserWindow.getFocusedWindow() || mainWindow
-    const baseName = path.basename(sourcePath)
-    const result = await dialog.showSaveDialog(win, {
-      defaultPath: baseName,
-    })
-    if (result.canceled || !result.filePath) {
-      return { error: 'cancelled' }
-    }
-    fs.writeFileSync(result.filePath, read.content ?? '', 'utf8')
-    return { success: true, path: result.filePath }
-  } catch (error) {
-    return { error: error.message }
-  }
-})
-
-ipcMain.handle('app-get-version', () => {
-  return app.getVersion()
-})
-
-ipcMain.handle('shortcuts-set-globals', (_event, payload) => {
-  try {
-    if (payload?.toggleSidebar) {
-      registeredGlobalShortcuts.toggleSidebar = toElectronAccel(payload.toggleSidebar)
-    }
-    if (payload?.capturePrompt) {
-      registeredGlobalShortcuts.capturePrompt = toElectronAccel(payload.capturePrompt)
-    }
-    const config = loadAppConfig()
-    config.globalShortcuts = { ...registeredGlobalShortcuts }
-    saveAppConfig(config)
-    registerAppGlobalShortcuts()
-    return { success: true, shortcuts: registeredGlobalShortcuts }
-  } catch (error) {
-    return { error: error.message }
-  }
+registerAppIpc({
+  ipcMain,
+  app,
+  registeredGlobalShortcuts,
+  toElectronAccel,
+  loadAppConfig,
+  saveAppConfig,
+  registerAppGlobalShortcuts,
 })
 
 // Handler pour restaurer le focus et coller
