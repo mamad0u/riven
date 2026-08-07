@@ -87,10 +87,10 @@ Le dossier est créé automatiquement au premier lancement de l'application.
 
 ### Frontend (Next.js)
 
-- **`app/files/page.tsx`** : Interface utilisateur du gestionnaire de fichiers
-  - Affichage de la liste des fichiers
-  - Navigation dans les dossiers
-  - Création, renommage, suppression
+> Note : l'ancienne page `app/files/page.tsx` (explorateur de fichiers autonome,
+> jamais chargée par aucune fenêtre Electron) a été supprimée car obsolète.
+> La gestion de fichiers (liste, navigation, création, renommage, suppression)
+> vit désormais dans `app/components/FileSidebar.tsx` et `app/page.tsx`.
 
 - **`electron/preload.js`** : API exposée au renderer
   - `window.electronAPI.fileManager.*` : Méthodes de gestion de fichiers
