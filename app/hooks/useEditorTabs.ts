@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { FileItem } from '../../electron.d'
+import { FileItem } from '@/electron.d'
 import { ensureMdExtension } from '../lib/moduleInsert'
 
 export interface Tab {

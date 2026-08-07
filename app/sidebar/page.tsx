@@ -16,7 +16,7 @@ import {
   resolveFolderColorForFile,
 } from '../lib/folderColors'
 import { ensureMigrated } from '../lib/tagStore'
-import type { FileItem } from '../../electron.d'
+import type { FileItem } from '@/electron.d'
 
 interface SearchResult {
   name: string
