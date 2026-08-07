@@ -13,6 +13,14 @@ const {
 const { registerFileIpc } = require('./ipc/files')
 const { registerDialogIpc } = require('./ipc/dialogs')
 const { registerAppIpc } = require('./ipc/app')
+const { createConfigStore } = require('./config')
+const { createShortcutsManager } = require('./shortcuts')
+const {
+  createMainWindow,
+  createSidebarWindowInstance,
+  createCaptureWindowInstance,
+} = require('./windows')
+const { createAppTray } = require('./tray')
 
 let mainWindow = null
 let sidebarWindow = null
@@ -22,24 +30,7 @@ let lastFocusedWindow = null // Fenêtre Electron qui avait le focus avant d'ouv
 let lastActiveElementInfo = null // Informations sur l'élément actif avant d'ouvrir la sidebar
 let lastActiveWindowHandle = null // Handle de la fenêtre système active (pour restaurer le focus)
 
-const CONFIG_FILE = () => path.join(app.getPath('userData'), 'riven-config.json')
-
-const loadAppConfig = () => {
-  try {
-    const raw = fs.readFileSync(CONFIG_FILE(), 'utf8')
-    return JSON.parse(raw)
-  } catch {
-    return {}
-  }
-}
-
-const saveAppConfig = (config) => {
-  try {
-    fs.writeFileSync(CONFIG_FILE(), JSON.stringify(config, null, 2), 'utf8')
-  } catch (err) {
-    console.error('Erreur sauvegarde config:', err)
-  }
-}
+const { loadAppConfig, saveAppConfig } = createConfigStore({ app, path, fs })
 
 const applyStoredBasePath = () => {
   const config = loadAppConfig()
@@ -52,111 +43,15 @@ const applyStoredBasePath = () => {
   }
 }
 
-// const : cet objet est partagé par référence avec ipc/app.js (shortcuts-set-globals),
-// il ne doit jamais être réassigné, seulement muté en place (voir plus bas).
-const registeredGlobalShortcuts = {
-  toggleSidebar: 'CommandOrControl+Shift+S',
-  capturePrompt: 'Alt+Shift+C',
-}
-
-const toElectronAccel = (accel) =>
-  String(accel || '')
-    .split('+')
-    .map((p) => {
-      const t = p.trim()
-      if (t.toLowerCase() === 'ctrl') return 'CommandOrControl'
-      return t
-    })
-    .join('+')
-
-const registerAppGlobalShortcuts = () => {
-  try {
-    globalShortcut.unregisterAll()
-  } catch {
-    /* ignore */
-  }
-
-  const sidebarAccel = registeredGlobalShortcuts.toggleSidebar || 'CommandOrControl+Shift+S'
-  const okSidebar = globalShortcut.register(sidebarAccel, () => {
-    toggleSidebar()
+const { registeredGlobalShortcuts, toElectronAccel, registerAppGlobalShortcuts } =
+  createShortcutsManager({
+    globalShortcut,
+    onToggleSidebar: () => toggleSidebar(),
+    onCapturePrompt: () => openCapturePrompt(),
   })
-  if (!okSidebar) {
-    console.log('Échec enregistrement raccourci sidebar:', sidebarAccel)
-  } else {
-    console.log('Raccourci sidebar enregistré:', sidebarAccel)
-  }
-
-  const captureAccel = registeredGlobalShortcuts.capturePrompt || 'Alt+Shift+C'
-  const okCapture = globalShortcut.register(captureAccel, () => {
-    console.log('Raccourci Capture prompt reçu:', captureAccel)
-    void openCapturePrompt()
-  })
-  if (!okCapture) {
-    console.log('Échec enregistrement raccourci capture:', captureAccel)
-  } else {
-    console.log('Raccourci capture enregistré:', captureAccel)
-  }
-}
 
 const createWindow = () => {
-  mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    minWidth: 900,
-    minHeight: 600,
-    frame: false,
-    autoHideMenuBar: true,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      webSecurity: true,
-      preload: path.join(__dirname, 'preload.js')
-    },
-    show: false,
-    backgroundColor: '#0D0D0E',
-  })
-
-  mainWindow.setMenuBarVisibility(false)
-
-  // Afficher la fenêtre une fois le contenu chargé
-  mainWindow.once('ready-to-show', () => {
-    mainWindow?.show()
-    
-    // Ouvrir les DevTools en développement
-    if (isDev) {
-      mainWindow?.webContents.openDevTools()
-    }
-  })
-
-  // Charger l'application Next.js
-  if (isDev) {
-    // En développement : charger depuis le serveur Next.js
-    mainWindow.loadURL('http://localhost:3000')
-    
-    // Recharger automatiquement si le serveur Next.js redémarre
-    mainWindow.webContents.on('did-fail-load', () => {
-      setTimeout(() => {
-        mainWindow?.loadURL('http://localhost:3000')
-      }, 1000)
-    })
-  } else {
-    // En production : charger depuis les fichiers statiques exportés
-    // Assurez-vous que Next.js est configuré avec output: 'export'
-    mainWindow.loadFile(path.join(__dirname, '../out/index.html'))
-  }
-
-  // Gérer la fermeture de la fenêtre (masquer au lieu de fermer)
-  mainWindow.on('close', (event) => {
-    if (!app.isQuitting) {
-      event.preventDefault()
-      mainWindow.hide()
-      // Afficher une notification (optionnel)
-      if (process.platform === 'darwin') {
-        app.dock.hide()
-      }
-    }
-  })
-
+  mainWindow = createMainWindow({ BrowserWindow, path, isDev, app })
   mainWindow.on('closed', () => {
     mainWindow = null
   })
@@ -169,55 +64,7 @@ const createSidebarWindow = () => {
   }
 
   const { screen } = require('electron')
-  const primaryDisplay = screen.getPrimaryDisplay()
-  const { width, height } = primaryDisplay.workAreaSize
-
-  // Taille de la fenêtre pour la barre de recherche (centrée)
-  // Augmenter la hauteur pour afficher les résultats
-  const windowWidth = 900
-  const windowHeight = 700 // Hauteur augmentée pour afficher les résultats
-  const x = Math.floor((width - windowWidth) / 2)
-  const y = Math.floor((height - windowHeight) / 2)
-
-  sidebarWindow = new BrowserWindow({
-    width: windowWidth,
-    height: windowHeight,
-    x: x, // Centré horizontalement
-    y: y, // Centré verticalement
-    frame: false, // Pas de barre de titre
-    alwaysOnTop: true, // Toujours au premier plan
-    skipTaskbar: true, // Ne pas afficher dans la barre des tâches
-    resizable: false, // Pas de redimensionnement
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      webSecurity: true,
-      preload: path.join(__dirname, 'preload.js')
-    },
-    backgroundColor: '#00000000', // Transparent
-    transparent: true, // Fenêtre transparente
-    // Empêcher la fenêtre de se fermer complètement
-    closable: false,
-    minimizable: false,
-    maximizable: false,
-    hasShadow: false, // Pas d'ombre
-  })
-
-  // Charger la page sidebar
-  if (isDev) {
-    sidebarWindow.loadURL('http://localhost:3000/sidebar')
-  } else {
-    sidebarWindow.loadFile(path.join(__dirname, '../out/sidebar/index.html'))
-  }
-
-  // Attendre que le contenu soit chargé avant d'afficher
-  sidebarWindow.webContents.once('did-finish-load', () => {
-    // Le contenu est chargé, on peut maintenant afficher avec animation
-  })
-
-  // Masquer la sidebar par défaut
-  sidebarWindow.hide()
-  sidebarWindow.setOpacity(0) // Commencer avec opacité 0
+  sidebarWindow = createSidebarWindowInstance({ BrowserWindow, screen, path, isDev })
 
   // Gérer la fermeture
   sidebarWindow.on('closed', () => {
@@ -234,45 +81,7 @@ const createCaptureWindow = () => {
   }
 
   const { screen } = require('electron')
-  const primaryDisplay = screen.getPrimaryDisplay()
-  const { x: waX, y: waY, width, height } = primaryDisplay.workArea
-
-  captureWindow = new BrowserWindow({
-    width,
-    height,
-    x: waX,
-    y: waY,
-    frame: false,
-    alwaysOnTop: true,
-    skipTaskbar: true,
-    resizable: false,
-    transparent: true,
-    backgroundColor: '#00000000',
-    hasShadow: false,
-    closable: false,
-    minimizable: false,
-    maximizable: false,
-    focusable: true,
-    show: false,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      webSecurity: true,
-      preload: path.join(__dirname, 'preload.js'),
-    },
-  })
-
-  captureWindow.setAlwaysOnTop(true, 'screen-saver')
-  captureWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
-
-  if (isDev) {
-    captureWindow.loadURL('http://localhost:3000/capture')
-  } else {
-    captureWindow.loadFile(path.join(__dirname, '../out/capture/index.html'))
-  }
-
-  captureWindow.hide()
-  captureWindow.setOpacity(0)
+  captureWindow = createCaptureWindowInstance({ BrowserWindow, screen, path, isDev })
 
   captureWindow.on('closed', () => {
     captureWindow = null
@@ -1100,83 +909,15 @@ console.log('Tous les handlers IPC pour la gestion de fichiers sont enregistrés
 
 // Créer l'icône du tray (barre système)
 const createTray = () => {
-  let trayIcon
-  
-  // Essayer de charger une icône personnalisée depuis public
-  try {
-    const iconPath = path.join(__dirname, '../public/icon.png')
-    trayIcon = nativeImage.createFromPath(iconPath)
-    if (trayIcon.isEmpty()) {
-      throw new Error('Icône vide')
-    }
-  } catch (error) {
-    // Si pas d'icône personnalisée, utiliser l'icône de l'application
-    // Electron utilisera automatiquement l'icône de l'app si disponible
-    // Sinon, créer une icône vide (Electron utilisera une icône par défaut)
-    trayIcon = nativeImage.createEmpty()
-  }
-
-  // Créer le tray (Electron utilisera l'icône de l'app si trayIcon est vide)
-  if (trayIcon && !trayIcon.isEmpty()) {
-    tray = new Tray(trayIcon)
-  } else {
-    // Utiliser l'icône par défaut de l'application
-    // Sur certains systèmes, cela nécessite que l'app ait une icône définie
-    tray = new Tray(nativeImage.createEmpty())
-  }
-
-  // Menu contextuel du tray
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      label: 'Afficher l\'application',
-      click: () => {
-        if (mainWindow) {
-          mainWindow.show()
-          if (process.platform === 'darwin') {
-            app.dock.show()
-          }
-        } else {
-          createWindow()
-        }
-      }
-    },
-    {
-      label: 'Recherche rapide',
-      click: () => {
-        toggleSidebar()
-      }
-    },
-    { type: 'separator' },
-    {
-      label: 'Quitter',
-      click: () => {
-        app.isQuitting = true
-        app.quit()
-      }
-    }
-  ])
-
-  tray.setToolTip('Mon Application')
-  tray.setContextMenu(contextMenu)
-
-  // Double-clic pour afficher la fenêtre
-  tray.on('double-click', () => {
-    if (mainWindow) {
-      mainWindow.show()
-      if (process.platform === 'darwin') {
-        app.dock.show()
-      }
-    } else {
-      createWindow()
-    }
-  })
-
-  // Clic simple pour afficher/masquer la sidebar (sur certains systèmes)
-  tray.on('click', () => {
-    if (process.platform === 'win32') {
-      // Sur Windows, le clic simple ouvre le menu contextuel
-      tray.popUpContextMenu()
-    }
+  tray = createAppTray({
+    Tray,
+    Menu,
+    nativeImage,
+    path,
+    app,
+    getMainWindow: () => mainWindow,
+    onShowWindow: () => createWindow(),
+    onToggleSidebar: () => toggleSidebar(),
   })
 }
 
