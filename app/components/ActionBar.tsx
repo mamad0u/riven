@@ -4,32 +4,27 @@ import { useEffect, useRef, useState } from 'react'
 import { Search, X } from 'lucide-react'
 import ModuleMenu, { ModuleType } from './ModuleMenu'
 import TemplateMenu from './TemplateMenu'
-import VariablesPanel from './VariablesPanel'
 import { normalizeModuleSpacing } from '../lib/moduleInsert'
 
-type ActionTab = 'module' | 'template' | 'variables'
+type ActionTab = 'module' | 'template' | 'options'
 
 interface ActionBarProps {
   isOpen: boolean
   onClose: () => void
   onInsertModule: (moduleId: ModuleType) => void
   onApplyTemplate: (body: string) => void
-  registry?: import('../lib/variableRegistry').VariableRegistry
-  onDefineVariable?: () => void
-  onInsertVariable?: (id: string) => void
-  onEditVariable?: (id: string) => void
 }
 
 const TABS: { id: ActionTab; label: string }[] = [
   { id: 'module', label: 'Module' },
   { id: 'template', label: 'Template' },
-  { id: 'variables', label: 'Variables' },
+  { id: 'options', label: 'Options' },
 ]
 
 const PLACEHOLDERS: Record<ActionTab, string> = {
   module: 'Search Modules',
   template: 'Search Templates',
-  variables: 'Search Variables',
+  options: 'Search Options',
 }
 
 export default function ActionBar({
@@ -37,10 +32,6 @@ export default function ActionBar({
   onClose,
   onInsertModule,
   onApplyTemplate,
-  registry = {},
-  onDefineVariable,
-  onInsertVariable,
-  onEditVariable,
 }: ActionBarProps) {
   const [activeTab, setActiveTab] = useState<ActionTab>('module')
   const [searchQuery, setSearchQuery] = useState('')
@@ -140,23 +131,10 @@ export default function ActionBar({
                 }}
               />
             )}
-            {activeTab === 'variables' && (
-              <VariablesPanel
-                registry={registry}
-                searchQuery={searchQuery}
-                onCreate={() => {
-                  handleClose()
-                  window.setTimeout(() => onDefineVariable?.(), 0)
-                }}
-                onEdit={(def) => {
-                  handleClose()
-                  window.setTimeout(() => onEditVariable?.(def.id), 0)
-                }}
-                onInsert={(id) => {
-                  handleClose()
-                  window.setTimeout(() => onInsertVariable?.(id), 0)
-                }}
-              />
+            {activeTab === 'options' && (
+              <div className="px-4 py-6 text-center text-sm text-riven-text-secondary">
+                Aucune option pour le moment
+              </div>
             )}
           </div>
         )}

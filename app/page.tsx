@@ -8,7 +8,7 @@ import { ensureMigrated } from './lib/tagStore'
 import { loadShortcutMap } from './lib/shortcutStore'
 import { applyTheme, loadTheme } from './lib/themeStore'
 import { PromptItem } from './lib/promptItems'
-import { insertModuleToken, splitPromptContent } from './lib/moduleInsert'
+import { insertModuleToken } from './lib/moduleInsert'
 import { useEditorTabs } from './hooks/useEditorTabs'
 import { useDashboardFilters } from './hooks/useDashboardFilters'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
@@ -672,10 +672,6 @@ export default function Home() {
             onClose={() => setActionBarOpen(false)}
             onInsertModule={handleInsertModule}
             onApplyTemplate={handleApplyTemplate}
-            registry={activeTab ? splitPromptContent(activeTab.content).registry : {}}
-            onDefineVariable={() => editorRef.current?.focused()?.openCreateVariable()}
-            onInsertVariable={(id) => editorRef.current?.focused()?.insertVariableRef(id)}
-            onEditVariable={(id) => editorRef.current?.focused()?.openEditVariable(id)}
           />
         </>
       )}
