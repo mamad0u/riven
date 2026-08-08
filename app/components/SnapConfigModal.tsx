@@ -220,7 +220,11 @@ export default function SnapConfigModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onCancel}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-transparent"
+      style={{ background: 'transparent' }}
+      onClick={onCancel}
+    >
       <div
         className="mx-4 w-full max-w-lg rounded-riven-lg border border-riven-border bg-riven-card shadow-xl"
         onClick={(e) => e.stopPropagation()}

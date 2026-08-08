@@ -93,7 +93,9 @@ export default function SidebarPage() {
 
   useEffect(() => {
     ensureMigrated()
+    document.body.style.background = 'transparent'
     document.body.style.backgroundColor = 'transparent'
+    document.documentElement.style.background = 'transparent'
     document.documentElement.style.backgroundColor = 'transparent'
     const timer = setTimeout(() => {
       setIsVisible(true)
@@ -101,7 +103,9 @@ export default function SidebarPage() {
     }, 10)
     return () => {
       clearTimeout(timer)
+      document.body.style.background = ''
       document.body.style.backgroundColor = ''
+      document.documentElement.style.background = ''
       document.documentElement.style.backgroundColor = ''
     }
   }, [])
@@ -310,7 +314,7 @@ export default function SidebarPage() {
       <div className="flex h-full w-full flex-col items-center px-4 pt-10">
         <div
           className={`w-full max-w-2xl transition-opacity duration-300 ${
-            isVisible ? 'opacity-100' : 'opacity-0'
+            isVisible && !showModuleEditor ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}
         >
           {!isActive ? (

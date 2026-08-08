@@ -4,9 +4,17 @@ export default function SidebarLayout({
   children: React.ReactNode
 }) {
   return (
-    <div style={{ backgroundColor: 'transparent' }}>
-      {children}
-    </div>
+    <>
+      <style>{`
+        html, body {
+          background: transparent !important;
+          background-color: transparent !important;
+        }
+      `}</style>
+      <div className="bg-transparent" style={{ background: 'transparent', minHeight: '100%' }}>
+        {children}
+      </div>
+    </>
   )
 }
 
